@@ -1,0 +1,85 @@
+---
+title: "Admission"
+author: "Lina Sheremet"
+date: "February 11, 2019"
+output: html_document
+---
+
+Load in Libraries we will use
+```{r}
+library(ggplot2)
+library(ggcorrplot)
+library(plotly)
+```
+
+
+Exproratory Data Analysis
+```{r}
+#load in data
+grad <- read.csv("C:/Users/Lina.Sheremet/OneDrive - Thermo Fisher Scientific/Jose Prez Grad Admission/data.csv")
+
+#View data
+#View(grad)
+
+#Take out TOEFL Score
+grad <- grad[,-3]
+
+
+#Take a look at distribution of Chance of Admission
+ggplotly(ggplot(grad, aes(x=Chance.of.Admit)) + 
+  geom_density(fill = "lightblue") + geom_vline(aes(xintercept=mean(Chance.of.Admit)),
+            color="cornflowerblue", linetype="dashed", size=2) + ggtitle("Density Plot of Chance of Admit") + labs(x = "Chance of Admit", y = "Density"))
+
+
+#Let's check out some of the other variables
+#GPA VS Admission
+#Looks linear
+ggplotly(ggplot(grad, aes( x = CGPA, y=Chance.of.Admit)) +
+  geom_point(color = "cornflowerblue", size = 3) + ggtitle("Scatterplot of Admit VS Undergrad GPA") + labs(y = "Chance of Admit", x = "Undergrad GPA"))
+
+
+#Distribution of "Research" variable
+#Want it to be relatively even so we know we have a good distribution of data
+ggplotly(ggplot(grad, aes(x = Research)) + geom_bar(fill = "dodgerblue3") + ylim(0,350) + ggtitle("Bar Chart of Research") + labs(x = "Research", y = "Count of Students"))
+
+
+```
+
+Simple Linear Regression
+```{r}
+#Need to split into train and test
+#sample 400 out of 500
+train.indices <- sample(1:500, 400)
+
+#assign data to train and test
+train <- grad[train.indices,]
+test <- grad[-train.indices,]
+
+#Admission rate for test data
+output <- test[,8]
+test <- test[,-8]
+
+#Run linear regression
+m1 <- lm(Chance.of.Admit ~ GRE.Score + SOP + LOR + University.Rating + CGPA + Research, data = train)
+summary(m1)
+
+
+#SOP not significant, so take it out
+m2 <- lm(Chance.of.Admit ~ GRE.Score + LOR + University.Rating + CGPA + Research, data = train)
+
+#difference between predicted and true
+predict(m2, test)-output
+
+#mean squared error looks low!
+mean((predict(m2, test)-output)^2)
+```
+
+Use regression to predict
+```{r}
+#Let's add a 101th row to test, for Bob
+test[101,] <- c(101,300,5,3,5,7.5, 0)
+
+#His chances of admission
+predict(m2, test[101,])
+
+```
